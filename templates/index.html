@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medication Inventory Log</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f4f6f9; color: #333; }
+    header { background: #2c3e50; color: white; padding: 16px 24px; }
+    header h1 { font-size: 1.3rem; font-weight: 600; }
+
+    .tabs { display: flex; background: #34495e; }
+    .tab { padding: 12px 24px; cursor: pointer; color: #bdc3d0; font-size: 0.9rem; border-bottom: 3px solid transparent; }
+    .tab.active { color: white; border-bottom-color: #3498db; }
+
+    .tab-content { display: none; padding: 24px; max-width: 900px; margin: 0 auto; }
+    .tab-content.active { display: block; }
+
+    .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: #2c3e50; }
+
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.8rem; font-weight: 500; color: #555; }
+    .form-group input, .form-group select {
+      padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px;
+      font-size: 0.9rem; min-width: 120px;
+    }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #3498db; }
+
+    button[type="submit"] {
+      padding: 8px 18px; background: #3498db; color: white;
+      border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem;
+    }
+    button[type="submit"]:hover { background: #2980b9; }
+    .btn-danger { background: #e74c3c; }
+    .btn-danger:hover { background: #c0392b; }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { text-align: left; padding: 8px 10px; border-bottom: 2px solid #eee; color: #555; font-weight: 600; }
+    td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 0.78rem; font-weight: 600; background: #eaf4fd; color: #2980b9;
+    }
+    .badge.low { background: #fdecea; color: #e74c3c; }
+
+    .search-row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .search-row input { flex: 1; padding: 9px 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.9rem; }
+    #patient-results { margin-top: 12px; }
+    .empty { color: #999; font-size: 0.88rem; padding: 12px 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Medication Inventory Log</h1>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('inventory')">Inventory</div>
+  <div class="tab" onclick="switchTab('dispense')">Dispense</div>
+  <div class="tab" onclick="switchTab('patients')">Patient Lookup</div>
+  <div class="tab" onclick="switchTab('log')">Dispensing Log</div>
+</div>
+
+<!-- INVENTORY TAB -->
+<div id="tab-inventory" class="tab-content active">
+  <div class="card">
+    <h2>Add Inventory</h2>
+    <form method="POST" action="/inventory/add">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Lot Number</label>
+          <input name="lot_number" placeholder="e.g. LOT-2024-001" required />
+        </div>
+        <div class="form-group">
+          <label>Concentration</label>
+          <select name="concentration">
+            {% for c in concentrations %}
+            <option value="{{ c }}">{{ c }} mg</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quantity (vials)</label>
+          <input name="quantity" type="number" min="1" value="1" required style="width:100px" />
+        </div>
+        <button type="submit">Add</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Current Inventory</h2>
+    {% if inventory %}
+    <table>
+      <thead>
+        <tr>
+          <th>Lot Number</th>
+          <th>Concentration</th>
+          <th>Qty Remaining</th>
+          <th>Date Received</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in inventory | sort(attribute='lot_number') %}
+        <tr>
+          <td>{{ item.lot_number }}</td>
+          <td><span class="badge">{{ item.concentration }} mg</span></td>
+          <td>
+            <span class="badge {% if item.quantity <= 5 %}low{% endif %}">
+              {{ item.quantity }} vial{{ 's' if item.quantity != 1 }}
+            </span>
+          </td>
+          <td>{{ item.date_received }}</td>
+          <td>
+            <form method="POST" action="/inventory/delete" style="display:inline">
+              <input type="hidden" name="lot_number" value="{{ item.lot_number }}" />
+              <input type="hidden" name="concentration" value="{{ item.concentration }}" />
+              <button type="submit" class="btn-danger btn-sm" onclick="return confirm('Remove this inventory entry?')">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No inventory yet. Add vials above.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- DISPENSE TAB -->
+<div id="tab-dispense" class="tab-content">
+  <div class="card">
+    <h2>Record Dispensing</h2>
+    <form method="POST" action="/dispense">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Patient Name</label>
+          <input name="patient_name" placeholder="Full name" required />
+        </div>
+        <div class="form-group">
+          <label>Lot Number</label>
+          <select name="lot_number">
+            {% set seen = [] %}
+            {% for item in inventory | sort(attribute='lot_number') %}
+              {% if item.lot_number not in seen %}
+                {% set _ = seen.append(item.lot_number) %}
+                <option value="{{ item.lot_number }}">{{ item.lot_number }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Concentration</label>
+          <select name="concentration">
+            {% for c in concentrations %}
+            <option value="{{ c }}">{{ c }} mg</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Qty Dispensed</label>
+          <input name="quantity" type="number" min="1" value="1" required style="width:90px" />
+        </div>
+        <button type="submit">Record</button>
+      </div>
+    </form>
+    {% if not inventory %}
+    <p class="empty" style="margin-top:12px">Add inventory first before dispensing.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- PATIENT LOOKUP TAB -->
+<div id="tab-patients" class="tab-content">
+  <div class="card">
+    <h2>Patient Lookup</h2>
+    <div class="search-row">
+      <input id="patient-search" placeholder="Enter patient name..." onkeydown="if(event.key==='Enter') lookupPatient()" />
+      <button type="button" onclick="lookupPatient()" style="padding:9px 18px;background:#3498db;color:white;border:none;border-radius:5px;cursor:pointer;font-size:0.9rem">Search</button>
+    </div>
+    <div id="patient-results"></div>
+  </div>
+</div>
+
+<!-- LOG TAB -->
+<div id="tab-log" class="tab-content">
+  <div class="card">
+    <h2>All Dispensing Records</h2>
+    {% if records %}
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Patient</th>
+          <th>Lot Number</th>
+          <th>Concentration</th>
+          <th>Qty</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records | reverse %}
+        <tr>
+          <td>{{ r.date }}</td>
+          <td>{{ r.patient_name }}</td>
+          <td>{{ r.lot_number }}</td>
+          <td><span class="badge">{{ r.concentration }} mg</span></td>
+          <td>{{ r.quantity }}</td>
+          <td>
+            <form method="POST" action="/record/delete" style="display:inline">
+              <input type="hidden" name="index" value="{{ loop.revindex0 }}" />
+              <button type="submit" class="btn-danger btn-sm" onclick="return confirm('Delete this record?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No dispensing records yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  function switchTab(name) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    const tabs = ['inventory', 'dispense', 'patients', 'log'];
+    document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
+  }
+
+  function lookupPatient() {
+    const name = document.getElementById('patient-search').value.trim();
+    if (!name) return;
+    fetch('/patient/' + encodeURIComponent(name))
+      .then(r => r.json())
+      .then(records => {
+        const el = document.getElementById('patient-results');
+        if (records.length === 0) {
+          el.innerHTML = '<p class="empty">No records found for "' + name + '".</p>';
+          return;
+        }
+        let html = '<table><thead><tr><th>Date</th><th>Lot Number</th><th>Concentration</th><th>Qty</th></tr></thead><tbody>';
+        records.slice().reverse().forEach(r => {
+          html += `<tr><td>${r.date}</td><td>${r.lot_number}</td><td><span class="badge">${r.concentration} mg</span></td><td>${r.quantity}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        el.innerHTML = html;
+      });
+  }
+</script>
+
+</body>
+</html>
