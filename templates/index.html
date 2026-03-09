@@ -7,8 +7,19 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #f4f6f9; color: #333; }
-    header { background: #2c3e50; color: white; padding: 16px 24px; }
-    header h1 { font-size: 1.3rem; font-weight: 600; }
+    header {
+      background: #2c3e50; color: white;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    .header-right { font-size: 0.82rem; color: #bdc3d0; display: flex; gap: 16px; align-items: center; }
+    .header-right a { color: #7fb3d3; text-decoration: none; }
+    .header-right a:hover { text-decoration: underline; }
+    .session-warning {
+      background: #fff3cd; color: #856404; border-bottom: 1px solid #ffc107;
+      padding: 8px 24px; font-size: 0.85rem; display: none;
+    }
 
     .tabs { display: flex; background: #34495e; }
     .tab { padding: 12px 24px; cursor: pointer; color: #bdc3d0; font-size: 0.9rem; border-bottom: 3px solid transparent; }
@@ -58,7 +69,17 @@
 
 <header>
   <h1>Medication Inventory Log</h1>
+  <div class="header-right">
+    <span>{{ current_user.username }} ({{ current_user.role }})</span>
+    {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('admin_users') }}">Admin Panel</a>
+    {% endif %}
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
 </header>
+<div class="session-warning" id="session-warning">
+  Your session will expire in 2 minutes due to inactivity. Interact with the page to stay logged in.
+</div>
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab('inventory')">Inventory</div>
@@ -258,6 +279,25 @@
         el.innerHTML = html;
       });
   }
+</script>
+
+<script>
+  const TIMEOUT_MS = 30 * 60 * 1000;
+  const WARNING_MS = 2 * 60 * 1000;
+  const warningEl = document.getElementById('session-warning');
+  let warnTimer, logoutTimer;
+
+  function resetTimers() {
+    clearTimeout(warnTimer);
+    clearTimeout(logoutTimer);
+    warningEl.style.display = 'none';
+    warnTimer = setTimeout(() => { warningEl.style.display = 'block'; }, TIMEOUT_MS - WARNING_MS);
+    logoutTimer = setTimeout(() => { window.location.href = '{{ url_for("logout") }}'; }, TIMEOUT_MS);
+  }
+
+  document.addEventListener('click', resetTimers);
+  document.addEventListener('keypress', resetTimers);
+  resetTimers();
 </script>
 
 </body>

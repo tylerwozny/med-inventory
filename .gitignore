@@ -1,4 +1,6 @@
 data.json
+users.json
+audit.log
 __pycache__/
 *.pyc
 .env

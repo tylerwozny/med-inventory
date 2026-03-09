@@ -1,1 +1,4 @@
 flask
+flask-login
+cryptography
+python-dotenv

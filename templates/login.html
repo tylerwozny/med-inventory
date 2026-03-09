@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Medication Inventory</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f6f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .login-card {
+      background: white;
+      border-radius: 10px;
+      padding: 40px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.10);
+    }
+    h1 { font-size: 1.2rem; color: #2c3e50; margin-bottom: 4px; }
+    .subtitle { font-size: 0.82rem; color: #888; margin-bottom: 28px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; color: #555; margin-bottom: 5px; }
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid #ccc; border-radius: 6px;
+      font-size: 0.92rem;
+    }
+    input:focus { outline: none; border-color: #3498db; }
+    button {
+      width: 100%; padding: 11px;
+      background: #2c3e50; color: white;
+      border: none; border-radius: 6px;
+      font-size: 0.95rem; cursor: pointer;
+      margin-top: 8px;
+    }
+    button:hover { background: #1a252f; }
+    .alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-bottom: 18px;
+    }
+    .alert-danger { background: #fdecea; color: #c0392b; border: 1px solid #f5c6cb; }
+    .alert-warning { background: #fff8e1; color: #856404; border: 1px solid #ffc107; }
+    .footer-note {
+      font-size: 0.75rem; color: #aaa;
+      text-align: center; margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1>Medication Inventory Log</h1>
+    <p class="subtitle">Authorized personnel only. Access is monitored and logged.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username"
+               autocomplete="username" required autofocus />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password"
+               autocomplete="current-password" required />
+      </div>
+      <button type="submit">Sign In</button>
+    </form>
+
+    <p class="footer-note">
+      This system contains protected health information (PHI).<br>
+      Unauthorized access is prohibited and subject to penalties under HIPAA.
+    </p>
+  </div>
+</body>
+</html>
